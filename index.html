@@ -10,125 +10,162 @@
   button { font-size: 16px; padding: 12px 16px; width: 100%; }
   .log { margin-top: 12px; font-size: 14px; white-space: pre-wrap; background: #f6f6f6; padding: 10px; border-radius: 8px; }
   .hint { color: #666; font-size: 13px; margin-top: 8px; }
+  .fallback { display:none; margin-top:12px; }
+  textarea { width:100%; height:100px; font-size:14px; padding:8px; box-sizing:border-box; }
 </style>
 </head>
 <body>
   <h1>マピオンURL → 座標コピー＆マイマップ起動</h1>
   <button id="runBtn">実行</button>
-  <div class="hint">※ 先にマピオンのURLをコピーしてから押してな。</div>
+  <div class="hint">※ 先にマピオンのURLをコピーしてから押してな。HTTPS配信が必要（GitHub PagesならOK）。</div>
   <div class="log" id="log">待機中…</div>
 
+  <div class="fallback" id="fallbackBox">
+    <p>クリップボードの取得に失敗したので、ここに<strong>マピオンのURLを貼り付け</strong>て「続行」を押してな。</p>
+    <textarea id="fallbackInput" placeholder="ここにURLを貼り付け"></textarea>
+    <button id="fallbackBtn">続行</button>
+  </div>
+
 <script>
-  // ★あなたのマイマップURLに置き換えてください
-const MY_MAPS_URL = "https://www.google.com/maps/d/edit?hl=ja&authuser=0&mid=1bsmlEhct96yonZynraZzo3WGYrcriWs";
+  // ★ここを自分のマイマップURLに差し替え（編集/閲覧どちらでも可）
+  // 例）"https://www.google.com/maps/d/edit?hl=ja&authuser=0&mid=XXXXXXXXXXXX"
+  const MY_MAPS_URL = "https://www.google.com/maps/d/edit?hl=ja&authuser=0&mid=1bsmlEhct96yonZynraZzo3WGYrcriWs";
 
   const logEl = document.getElementById('log');
   const runBtn = document.getElementById('runBtn');
+  const fbBox  = document.getElementById('fallbackBox');
+  const fbIn   = document.getElementById('fallbackInput');
+  const fbBtn  = document.getElementById('fallbackBtn');
 
-  function log(msg) {
-    logEl.textContent = msg;
-    console.log(msg);
+  function log(msg) { logEl.textContent = msg; console.log(msg); }
+
+  // "36/16/35.98" → 36 + 16/60 + 35.98/3600（DMSを小数に）
+  function parseMapionAngle(input) {
+    const s = String(input ?? '').trim();
+    if (!s) return NaN;
+    const parts = s.split('/');
+    if (parts.length === 3) {
+      const d = parseFloat(parts[0]), m = parseFloat(parts[1]), sec = parseFloat(parts[2]);
+      return [d,m,sec].every(Number.isFinite) ? d + m/60 + sec/3600 : NaN;
+    } else if (parts.length === 2) {
+      const d = parseFloat(parts[0]), m = parseFloat(parts[1]);
+      return [d,m].every(Number.isFinite) ? d + m/60 : NaN;
+    } else {
+      const v = parseFloat(s);
+      return Number.isFinite(v) ? v : NaN;
+    }
   }
 
-  // マピオンURLから緯度経度を頑丈めに抜く関数
+  // マピオンURLから緯度経度を抜く（複数フォーマット対応）
   function extractLatLngFromMapion(urlStr) {
     try {
-      const u = new URL(urlStr);
+      const u = new URL(urlStr.trim());
 
-      // 1) /m2/{lat},{lng}[,{zoom}] 形式
-      // 例: https://www.mapion.co.jp/m2/35.68124,139.76712,17
+      // 1) /m2/{lat},{lng}[,{zoom}]
       if (u.pathname.startsWith('/m2/')) {
-        const tail = u.pathname.replace('/m2/', '');
-        const parts = tail.split(',');
+        const parts = u.pathname.slice(4).split(',');
         if (parts.length >= 2) {
-          const lat = parseFloat(parts[0]);
-          const lng = parseFloat(parts[1]);
+          const lat = parseFloat(parts[0]), lng = parseFloat(parts[1]);
           if (isFinite(lat) && isFinite(lng)) return { lat, lng };
         }
       }
 
-      // 2) クエリに lat / lon（または ll）系がある場合
-      // 例: ?lat=35.6&lon=139.6 / ?ll=35.6,139.6
+      // 2) ?lat=.. &lon=.. / lng=.. / long=..
       const latQ = u.searchParams.get('lat');
       const lonQ = u.searchParams.get('lon') || u.searchParams.get('lng') || u.searchParams.get('long');
       if (latQ && lonQ) {
-        const lat = parseFloat(latQ);
-        const lng = parseFloat(lonQ);
-        if (isFinite(lat) && isFinite(lng)) return { lat, lng };
-      }
-      const ll = u.searchParams.get('ll');
-      if (ll) {
-        const [latS, lngS] = ll.split(',');
-        const lat = parseFloat(latS);
-        const lng = parseFloat(lngS);
+        const lat = parseFloat(latQ), lng = parseFloat(lonQ);
         if (isFinite(lat) && isFinite(lng)) return { lat, lng };
       }
 
-      // 3) ハッシュに ll=35.6,139.6 がある場合
+      // 3) ?ll=lat,lng
+      const ll = u.searchParams.get('ll');
+      if (ll) {
+        const [a,b] = ll.split(',');
+        const lat = parseFloat(a), lng = parseFloat(b);
+        if (isFinite(lat) && isFinite(lng)) return { lat, lng };
+      }
+
+      // 4) #...ll=lat,lng（ハッシュに入ってる場合）
       if (u.hash && u.hash.includes('ll=')) {
         const m = u.hash.match(/ll=([0-9.+-]+),([0-9.+-]+)/);
         if (m) {
-          const lat = parseFloat(m[1]);
-          const lng = parseFloat(m[2]);
+          const lat = parseFloat(m[1]), lng = parseFloat(m[2]);
           if (isFinite(lat) && isFinite(lng)) return { lat, lng };
         }
       }
 
-      // 必要に応じて他のパターンを追加
+      // 5) ?nl=36/16/35.98 & el=139/15/34.17（度/分/秒を "/" で区切る古い形式）
+      const nl = u.searchParams.get('nl');
+      const el = u.searchParams.get('el');
+      if (nl && el) {
+        const lat = parseMapionAngle(nl);
+        const lng = parseMapionAngle(el);
+        if (isFinite(lat) && isFinite(lng)) return { lat, lng };
+      }
+
       return null;
     } catch {
       return null;
     }
   }
 
-  // 必要なら東京測地系→世界測地系の変換を入れるためのフック（今は素通し）
-  function normalizeToWGS84(lat, lng, datumHint) {
-    // もし datumHint === 'tokyo' などを検出できるなら、ここで補正（約+0.00010695φ - 0.000017464λ 等）
-    // ただし多くの現行マピオンURLはWGS84想定でOK
+  //（必要なら測地系補正をここで）
+  function normalizeToWGS84(lat, lng) {
     return { lat, lng };
   }
 
-  async function runOnce() {
-    log('クリップボードからURLを取得中…');
-    let text;
-    try {
-      text = await navigator.clipboard.readText();
-    } catch (e) {
-      log('クリップボードの読み取りに失敗しました。HTTPSで開いているか、権限が許可されているか確認してください。\n' +
-          '（iOS Safari等では一部制限が厳しいです。必要なら一時的にテキストエリア貼り付け式のフォールバックを足せます）\n' +
-          'エラー: ' + e);
-      return;
-    }
+  async function copyText(text) {
+    try { await navigator.clipboard.writeText(text); return true; }
+    catch { return false; }
+  }
 
-    if (!text || !/^https?:\/\//i.test(text)) {
-      log('クリップボードにURLが見つかりませんでした。先にマピオンのURLをコピーしてからボタンを押してな。');
-      return;
-    }
+  function openMyMaps() {
+    const w = window.open(MY_MAPS_URL, '_blank', 'noopener');
+    if (!w) log('（ポップアップがブロックされたかも。ブラウザの許可を確認してな）');
+  }
 
-    const coords = extractLatLngFromMapion(text.trim());
+  async function handleUrl(urlText) {
+    const coords = extractLatLngFromMapion(urlText);
     if (!coords) {
-      log('マピオンURLから座標を読み取れませんでした。\nURL形式がいつもと違う可能性があります。\n例）/m2/35.XXXX,139.XXXX の形式に対応しています。');
+      log('マピオンURLから座標を読み取れませんでした。\n対応例：/m2/35.68124,139.76712 もしくは nl/el（36/16/35.98 等）');
+      openMyMaps();
       return;
     }
-
     const { lat, lng } = normalizeToWGS84(coords.lat, coords.lng);
     const fixedLat = (+lat).toFixed(6);
     const fixedLng = (+lng).toFixed(6);
     const coordStr = `${fixedLat},${fixedLng}`;
 
-    try {
-      await navigator.clipboard.writeText(coordStr);
+    const ok = await copyText(coordStr);
+    if (ok) {
       log(`座標をコピーしました：${coordStr}\nマイマップを開いています…`);
-    } catch (e) {
-      log(`座標は取得できましたがクリップボードへの書き込みに失敗：${coordStr}\nエラー: ${e}\n（ブラウザ権限を確認してください）`);
+    } else {
+      log(`座標は取得：${coordStr}\nしかしクリップボードに書き込めませんでした。手動でコピーしてください。`);
+      alert(`座標：${coordStr}\n（コピーできない場合は長押し→コピー）`);
     }
-
-    // マイマップを新規タブで開く
-    window.open(MY_MAPS_URL, '_blank', 'noopener');
+    openMyMaps();
   }
 
-  runBtn.addEventListener('click', () => {
-    runOnce();
+  async function runOnce() {
+    log('クリップボードからURLを取得中…');
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text || !/^https?:\/\//i.test(text)) throw new Error('クリップボードにURLが無い');
+      await handleUrl(text);
+    } catch {
+      // フォールバックに切り替え
+      log('クリップボードの読み取りに失敗。貼り付けフォールバックに切り替えます。');
+      fbBox.style.display = 'block';
+      fbIn.focus();
+    }
+  }
+
+  runBtn.addEventListener('click', runOnce);
+  fbBtn.addEventListener('click', () => {
+    const v = fbIn.value.trim();
+    if (!v) { alert('URLを貼り付けてください'); return; }
+    handleUrl(v);
   });
 </script>
 </body>
