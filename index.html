@@ -39,7 +39,7 @@
   </div>
 
 <script>
-  // ★ここを自分のマイマップURLに差し替え（編集/閲覧どちらでも可）
+  // ★あなたのマイマップURLに差し替え（閲覧用 or 編集用）
   // 例）"https://www.google.com/maps/d/edit?hl=ja&authuser=0&mid=XXXXXXXXXXXX"
   const MY_MAPS_URL = "https://www.google.com/maps/d/edit?hl=ja&authuser=0&mid=1bsmlEhct96yonZynraZzo3WGYrcriWs";
 
@@ -48,6 +48,9 @@
   const fbBox  = document.getElementById('fallbackBox');
   const fbIn   = document.getElementById('fallbackInput');
   const fbBtn  = document.getElementById('fallbackBtn');
+
+  const isAndroid = /Android/i.test(navigator.userAgent);
+  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
   function log(msg) { logEl.textContent = msg; console.log(msg); }
 
@@ -107,7 +110,7 @@
         }
       }
 
-      // 5) ?nl=36/16/35.98 & el=139/15/34.17（DMSの古い形式）
+      // 5) ?nl=36/16/35.98 & el=139/15/34.17（DMS古形式）
       const nl = u.searchParams.get('nl');
       const el = u.searchParams.get('el');
       if (nl && el) {
@@ -134,33 +137,85 @@
     catch { return false; }
   }
 
-  function openMyMaps() {
-    const w = window.open(MY_MAPS_URL, '_blank', 'noopener');
-    if (!w) log('（ポップアップがブロックされたかも。ブラウザの許可を確認してな）');
+  // --- ここから「アプリで開く」3段フォールバック ---
+  // ① まずは My Maps のユニバーサルリンクを試す（運が良ければアプリが拾う）
+  function tryOpenMyMapsUniversal() {
+    const a = document.createElement('a');
+    a.href = MY_MAPS_URL;
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   }
+
+  // ② だめなら座標で“アプリ”を強制起動（iOS/Android別）
+  function openMapsAppWithCoords(lat, lng) {
+    const q = `${lat},${lng}`;
+
+    if (isIOS) {
+      // iOS: Google Maps アプリ URLスキーム
+      // 端末にインストールされていない場合は無反応になることがあるので、
+      // 少し待ってWebフォールバックへ
+      window.location.href = `comgooglemaps://?q=${encodeURIComponent(q)}&center=${encodeURIComponent(q)}&zoom=17`;
+    } else if (isAndroid) {
+      // Android: intent でGoogleマップアプリを指名起動
+      const intentUrl = `intent://maps.google.com/?q=${encodeURIComponent(q)}#Intent;scheme=https;package=com.google.android.apps.maps;end`;
+      const a = document.createElement('a');
+      a.href = intentUrl;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } else {
+      // PC等はWeb
+      window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`, '_blank', 'noopener');
+    }
+  }
+
+  // ③ 最後の保険：My Maps（Web）を開く
+  function openMyMapsWeb() {
+    window.open(MY_MAPS_URL, '_blank', 'noopener');
+  }
+
+  // 実行シーケンス：My Mapsユニバーサル → 少し待って座標でアプリ → さらに保険でWeb
+  function openMyMapPreferApp(lat, lng) {
+    tryOpenMyMapsUniversal();
+
+    // 350ms後に座標でアプリ起動を試行（ユニバーサルが失敗した場合の保険）
+    setTimeout(() => {
+      openMapsAppWithCoords(lat, lng);
+    }, 350);
+
+    // さらに700ms後にWebを開く（アプリが起動しなかった端末向けの最終フォールバック）
+    setTimeout(() => {
+      openMyMapsWeb();
+    }, 1050);
+  }
+  // --- フォールバックここまで ---
 
   async function handleUrl(urlText) {
     const coords = extractLatLngFromMapion(urlText);
     if (!coords) {
       log('マピオンURLから座標を読み取れませんでした。/m2/形式、lat&lon/ll形式、nl&el形式（DMS）に対応しています。');
-      openMyMaps();
+      // 読み取れなくてもMy Mapsは開いておく
+      openMyMapsWeb();
       return;
     }
 
-    // ★常時：日本測地系→WGS84へ補正
+    // 常時：日本測地系→WGS84へ補正
     const { lat: wgsLat, lng: wgsLng } = tokyoToWgs(coords.lat, coords.lng);
-
-    const fixedLat = (+wgsLat).toFixed(6), fixedLng = (+wgsLng).toFixed(6);
-    const coordStr = `${fixedLat},${fixedLng}`;
+    const lat6 = (+wgsLat).toFixed(6), lng6 = (+wgsLng).toFixed(6);
+    const coordStr = `${lat6},${lng6}`;
 
     const ok = await copyText(coordStr);
     if (ok) {
-      log(`座標をコピーしました：${coordStr}\n（Tokyo→WGS84 補正済み）\nマイマップを開いています…`);
+      log(`座標をコピーしました：${coordStr}\n（Tokyo→WGS84 補正済み）\nマイマップをアプリ優先で開きます…`);
     } else {
       log(`座標：${coordStr}\n（Tokyo→WGS84 補正済み）\nクリップボード書き込み失敗。手動コピーしてな。`);
       alert(`座標：${coordStr}`);
     }
-    openMyMaps();
+
+    // アプリ優先で開く（ユニバーサル→座標deep link→Web）
+    openMyMapPreferApp(lat6, lng6);
   }
 
   async function runOnce() {
