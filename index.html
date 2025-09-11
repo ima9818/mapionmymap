@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>マピオンURL → 座標コピー＆マイマップ起動（測地系補正対応）</title>
+<title>マピオンURL → 座標コピー＆マイマップ起動（常時：日本測地系→WGS84補正）</title>
 <style>
   body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Noto Sans JP, sans-serif; margin: 0; padding: 16px; line-height: 1.6; }
   h1 { font-size: 18px; margin: 0 0 8px; }
@@ -14,12 +14,11 @@
   textarea { width:100%; height:100px; font-size:14px; padding:8px; box-sizing:border-box; }
   .steps { margin: 12px 0; font-size:14px; }
   .steps b { display:block; margin-bottom:4px; }
-  .opts { margin: 10px 0; font-size: 13px; color:#333; }
-  label { user-select:none; }
+  .badge { display:inline-block; font-size:12px; color:#fff; background:#0a7; padding:2px 6px; border-radius:6px; margin-left:6px; }
 </style>
 </head>
 <body>
-  <h1>マピオンURL → 座標コピー＆マイマップ起動</h1>
+  <h1>マピオンURL → 座標コピー＆マイマップ起動 <span class="badge">Tokyo→WGS84補正: 常時ON</span></h1>
 
   <div class="steps">
     <b>•操作手順</b>
@@ -27,10 +26,6 @@
     ②本サイトの「実行」ボタンを押す。ペーストを押す<br>
     ③Googleマップが開くので、「ここで検索」をタップしてペーストを選ぶ。<br>
     ④発生場所にピンが立つはず！
-  </div>
-
-  <div class="opts">
-    <label><input type="checkbox" id="forceTokyo"> 東京測地系補正を強制ON（自動検出が合わない時）</label>
   </div>
 
   <button id="runBtn">実行</button>
@@ -46,18 +41,17 @@
 <script>
   // ★ここを自分のマイマップURLに差し替え（編集/閲覧どちらでも可）
   // 例）"https://www.google.com/maps/d/edit?hl=ja&authuser=0&mid=XXXXXXXXXXXX"
-  const MY_MAPS_URL = "https://www.google.com/maps/d/edit?hl=ja&authuser=0&mid=1bsmlEhct96yonZynraZzo3WGYrcriWs";
+  const MY_MAPS_URL = "https://www.google.com/maps/d/edit?mid=YOUR_MY_MAP_ID";
 
   const logEl = document.getElementById('log');
   const runBtn = document.getElementById('runBtn');
   const fbBox  = document.getElementById('fallbackBox');
   const fbIn   = document.getElementById('fallbackInput');
   const fbBtn  = document.getElementById('fallbackBtn');
-  const forceTokyoChk = document.getElementById('forceTokyo');
 
   function log(msg) { logEl.textContent = msg; console.log(msg); }
 
-  // 角度 DMS（度/分/秒を "/" 区切り）→ 小数
+  // "36/16/35.98" → 36 + 16/60 + 35.98/3600（DMS→小数）
   function parseMapionAngle(input) {
     const s = String(input ?? '').trim();
     if (!s) return NaN;
@@ -79,47 +73,47 @@
     try {
       const u = new URL(urlStr.trim());
 
-      // /m2/{lat},{lng}[,{zoom}]
+      // 1) /m2/{lat},{lng}[,{zoom}]
       if (u.pathname.startsWith('/m2/')) {
         const parts = u.pathname.slice(4).split(',');
         if (parts.length >= 2) {
           const lat = parseFloat(parts[0]), lng = parseFloat(parts[1]);
-          if (isFinite(lat) && isFinite(lng)) return { lat, lng, url: u };
+          if (isFinite(lat) && isFinite(lng)) return { lat, lng };
         }
       }
 
-      // ?lat=.. &lon=.. / lng=.. / long=..
+      // 2) ?lat=.. &lon=.. / lng=.. / long=..
       const latQ = u.searchParams.get('lat');
       const lonQ = u.searchParams.get('lon') || u.searchParams.get('lng') || u.searchParams.get('long');
       if (latQ && lonQ) {
         const lat = parseFloat(latQ), lng = parseFloat(lonQ);
-        if (isFinite(lat) && isFinite(lng)) return { lat, lng, url: u };
+        if (isFinite(lat) && isFinite(lng)) return { lat, lng };
       }
 
-      // ?ll=lat,lng
+      // 3) ?ll=lat,lng
       const ll = u.searchParams.get('ll');
       if (ll) {
         const [a,b] = ll.split(',');
         const lat = parseFloat(a), lng = parseFloat(b);
-        if (isFinite(lat) && isFinite(lng)) return { lat, lng, url: u };
+        if (isFinite(lat) && isFinite(lng)) return { lat, lng };
       }
 
-      // #...ll=lat,lng
+      // 4) #...ll=lat,lng（ハッシュ）
       if (u.hash && u.hash.includes('ll=')) {
         const m = u.hash.match(/ll=([0-9.+-]+),([0-9.+-]+)/);
         if (m) {
           const lat = parseFloat(m[1]), lng = parseFloat(m[2]);
-          if (isFinite(lat) && isFinite(lng)) return { lat, lng, url: u };
+          if (isFinite(lat) && isFinite(lng)) return { lat, lng };
         }
       }
 
-      // ?nl=36/16/35.98 & el=139/15/34.17（DMS）
+      // 5) ?nl=36/16/35.98 & el=139/15/34.17（DMSの古い形式）
       const nl = u.searchParams.get('nl');
       const el = u.searchParams.get('el');
       if (nl && el) {
         const lat = parseMapionAngle(nl);
         const lng = parseMapionAngle(el);
-        if (isFinite(lat) && isFinite(lng)) return { lat, lng, url: u, dms: true };
+        if (isFinite(lat) && isFinite(lng)) return { lat, lng };
       }
 
       return null;
@@ -128,33 +122,11 @@
     }
   }
 
-  // 自動判定：東京測地系っぽいか？
-  // ・sasp.mapion.co.jp（旧系）/ nl, el が来たら Tokyo とみなす
-  function detectDatum(info) {
-    if (!info || !info.url) return 'wgs84';
-    const host = info.url.hostname || '';
-    if (forceTokyoChk.checked) return 'tokyo';
-    if (info.dms) return 'tokyo';
-    if (/(^|\.)sasp\.mapion\.co\.jp$/i.test(host)) return 'tokyo';
-    return 'wgs84';
-  }
-
-  // 東京測地系(Bessel) → WGS84 近似補正（全国向け簡易式）
-  // 参考的に広く使われる一次近似：
-  // wgsLat = tokyoLat - 0.00010695 * tokyoLat + 0.000017464 * tokyoLon + 0.0046017
-  // wgsLon = tokyoLon - 0.000046038 * tokyoLat - 0.000083043 * tokyoLon + 0.010040
+  // 日本測地系(Tokyo/Bessel) → WGS84 近似補正（全国向け一次近似）
   function tokyoToWgs(latTokyo, lonTokyo) {
     const wgsLat = latTokyo - 0.00010695 * latTokyo + 0.000017464 * lonTokyo + 0.0046017;
     const wgsLon = lonTokyo - 0.000046038 * latTokyo - 0.000083043 * lonTokyo + 0.010040;
     return { lat: wgsLat, lng: wgsLon };
-  }
-
-  // 測地系正規化（auto: URLを見て自動判定）
-  function normalizeToWGS84(lat, lng, datumMode) {
-    if (datumMode === 'tokyo') {
-      return tokyoToWgs(lat, lng);
-    }
-    return { lat, lng }; // すでにWGS84想定
   }
 
   async function copyText(text) {
@@ -168,24 +140,24 @@
   }
 
   async function handleUrl(urlText) {
-    const info = extractLatLngFromMapion(urlText);
-    if (!info) {
+    const coords = extractLatLngFromMapion(urlText);
+    if (!coords) {
       log('マピオンURLから座標を読み取れませんでした。/m2/形式、lat&lon/ll形式、nl&el形式（DMS）に対応しています。');
       openMyMaps();
       return;
     }
-    const datum = detectDatum(info);
-    let { lat, lng } = info;
-    ({ lat, lng } = normalizeToWGS84(lat, lng, datum));
 
-    const fixedLat = (+lat).toFixed(6), fixedLng = (+lng).toFixed(6);
+    // ★常時：日本測地系→WGS84へ補正
+    const { lat: wgsLat, lng: wgsLng } = tokyoToWgs(coords.lat, coords.lng);
+
+    const fixedLat = (+wgsLat).toFixed(6), fixedLng = (+wgsLng).toFixed(6);
     const coordStr = `${fixedLat},${fixedLng}`;
 
     const ok = await copyText(coordStr);
     if (ok) {
-      log(`座標をコピーしました：${coordStr}\n（測地系：${datum} → WGS84）\nマイマップを開いています…`);
+      log(`座標をコピーしました：${coordStr}\n（Tokyo→WGS84 補正済み）\nマイマップを開いています…`);
     } else {
-      log(`座標：${coordStr}\n（測地系：${datum} → WGS84）\nクリップボード書き込み失敗。手動コピーしてな。`);
+      log(`座標：${coordStr}\n（Tokyo→WGS84 補正済み）\nクリップボード書き込み失敗。手動コピーしてな。`);
       alert(`座標：${coordStr}`);
     }
     openMyMaps();
