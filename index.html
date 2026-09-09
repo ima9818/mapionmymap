@@ -1,17 +1,1161 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>マピオンURL → 座標コピー＆水利マップ</title>
+
+<style>
+
+body {
+  font-family:
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    "Noto Sans JP",
+    sans-serif;
+
+  margin: 0;
+  padding: 16px;
+  line-height: 1.6;
+}
+
+h1 {
+  font-size: 18px;
+  margin: 0 0 8px;
+}
+
+button {
+  font-size: 16px;
+  padding: 14px 16px;
+  width: 100%;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.steps {
+  margin: 12px 0;
+  font-size: 14px;
+}
+
+.steps b {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.badge {
+  display: inline-block;
+  font-size: 12px;
+  color: #fff;
+  background: #0a7;
+  padding: 2px 6px;
+  border-radius: 6px;
+  margin-left: 6px;
+}
+
+.hint {
+  color: #666;
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+.log {
+  margin-top: 12px;
+  font-size: 14px;
+  white-space: pre-wrap;
+  background: #f6f6f6;
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.fallback {
+  display: none;
+  margin-top: 16px;
+}
+
+textarea {
+  width: 100%;
+  height: 100px;
+  font-size: 16px;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+#mapArea {
+  display: none;
+  margin-top: 18px;
+}
+
+#mapBtn {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+
+  padding: 16px;
+
+  background: #e9e9e9;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+
+  text-align: center;
+  font-size: 18px;
+  font-weight: 700;
+
+  color: #000;
+  text-decoration: none;
+}
+
+#coord {
+  margin-top: 12px;
+
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Consolas,
+    monospace;
+
+  font-size: 18px;
+  font-weight: 700;
+
+  word-break: break-all;
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<h1>
+マピオンURL → 座標コピー＆水利マップ
+<span class="badge">水利マップ</span>
+</h1>
+
+
+<div class="steps">
+
+<b>• 操作手順</b>
+
+① 災害情報MAILの災害地点URLをコピー<br>
+
+② 「実行」を押す<br>
+
+③ クリップボードを読み取れない場合は、
+表示された入力欄にマピオンURLを貼り付けて
+「続行」を押す<br>
+
+④ 座標の計算とコピーが完了したら
+「水利マップを開く」を押す<br>
+
+⑤ Googleマップの「ここで検索」をタップして
+ペーストする<br>
+
+⑥ 発生場所にピンが立ちます<br><br>
+
+<strong>
+⚠️ ナビは開始しないでください。
+</strong><br>
+
+経路検索だけにしてください。<br>
+
+ナビを開始すると
+水利マップが消える場合があります。
+
+</div>
+
+
+
+<button id="runBtn">
+実行
+</button>
+
+
+
+<div class="hint">
+
+※ 先にマピオンのURLをコピーしてください。<br>
+
+※ マピオン座標を
+Tokyo測地系 → WGS84へ変換します。<br>
+
+※ HTTPS環境が必要です
+（GitHub PagesならOK）。
+
+</div>
+
+
+
+<div class="log" id="log">
+待機中…
+</div>
+
+
+
+<div id="coord"></div>
+
+
+
+<div class="fallback" id="fallbackBox">
+
+<p>
+
+クリップボードの読み取りに失敗しました。<br><br>
+
+下の入力欄に
+<strong>マピオンのURLを貼り付け</strong>
+てください。
+
+</p>
+
+
+<textarea
+id="fallbackInput"
+placeholder="ここにマピオンのURLを貼り付け">
+</textarea>
+
+
+<button id="fallbackBtn">
+続行
+</button>
+
+</div>
+
+
+
+<div id="mapArea">
+
 <a
-  id="mapBtn"
-  href="https://www.google.com/maps/d/viewer?hl=ja&mid=1bsmlEhct96yonZynraZzo3WGYrcriWs&ll=36.31131561559538%2C139.2035191463119&z=17"
-  style="
-    display:none;
-    margin-top:16px;
-    padding:14px;
-    background:#eee;
-    border-radius:8px;
-    text-align:center;
-    font-size:18px;
-    color:#000;
-    text-decoration:none;
-  "
+id="mapBtn"
+href="https://www.google.com/maps/d/viewer?hl=ja&mid=1bsmlEhct96yonZynraZzo3WGYrcriWs&ll=36.31131561559538%2C139.2035191463119&z=17"
 >
 水利マップを開く
 </a>
+
+<div class="hint">
+
+↑ 座標コピー完了後に、
+このボタンを押してください。
+
+</div>
+
+</div>
+
+
+
+<script>
+
+
+/*
+=================================================
+HTML要素
+=================================================
+*/
+
+const logEl =
+  document.getElementById("log");
+
+const runBtn =
+  document.getElementById("runBtn");
+
+const fbBox =
+  document.getElementById("fallbackBox");
+
+const fbIn =
+  document.getElementById("fallbackInput");
+
+const fbBtn =
+  document.getElementById("fallbackBtn");
+
+const mapArea =
+  document.getElementById("mapArea");
+
+const coordEl =
+  document.getElementById("coord");
+
+
+
+/*
+=================================================
+ログ表示
+=================================================
+*/
+
+function log(msg) {
+
+  logEl.textContent = msg;
+
+  console.log(msg);
+
+}
+
+
+
+/*
+=================================================
+マピオン旧形式
+
+例
+
+36/16/35.98
+
+↓
+
+36 + 16/60 + 35.98/3600
+=================================================
+*/
+
+function parseMapionAngle(input) {
+
+  const s =
+    String(input ?? "").trim();
+
+
+  if (!s) {
+
+    return NaN;
+
+  }
+
+
+  const parts =
+    s.split("/");
+
+
+  /*
+  度 / 分 / 秒
+  */
+
+  if (parts.length === 3) {
+
+    const d =
+      parseFloat(parts[0]);
+
+    const m =
+      parseFloat(parts[1]);
+
+    const sec =
+      parseFloat(parts[2]);
+
+
+    if (
+      Number.isFinite(d) &&
+      Number.isFinite(m) &&
+      Number.isFinite(sec)
+    ) {
+
+      return (
+        d +
+        m / 60 +
+        sec / 3600
+      );
+
+    }
+
+
+    return NaN;
+
+  }
+
+
+
+  /*
+  度 / 分
+  */
+
+  if (parts.length === 2) {
+
+    const d =
+      parseFloat(parts[0]);
+
+    const m =
+      parseFloat(parts[1]);
+
+
+    if (
+      Number.isFinite(d) &&
+      Number.isFinite(m)
+    ) {
+
+      return (
+        d +
+        m / 60
+      );
+
+    }
+
+
+    return NaN;
+
+  }
+
+
+
+  /*
+  10進数
+  */
+
+  const v =
+    parseFloat(s);
+
+
+  return (
+    Number.isFinite(v)
+      ? v
+      : NaN
+  );
+
+}
+
+
+
+/*
+=================================================
+マピオンURLから
+緯度・経度を抽出
+=================================================
+*/
+
+function extractLatLngFromMapion(urlStr) {
+
+  try {
+
+    const u =
+      new URL(urlStr.trim());
+
+
+
+    /*
+    ---------------------------------
+    1.
+
+    /m2/36.12345,139.12345
+    ---------------------------------
+    */
+
+    if (
+      u.pathname.startsWith("/m2/")
+    ) {
+
+      const parts =
+        u.pathname
+          .slice(4)
+          .split(",");
+
+
+      if (
+        parts.length >= 2
+      ) {
+
+        const lat =
+          parseFloat(parts[0]);
+
+        const lng =
+          parseFloat(parts[1]);
+
+
+        if (
+          Number.isFinite(lat) &&
+          Number.isFinite(lng)
+        ) {
+
+          return {
+            lat: lat,
+            lng: lng
+          };
+
+        }
+
+      }
+
+    }
+
+
+
+    /*
+    ---------------------------------
+    2.
+
+    ?lat=
+    &lon=
+
+    または
+
+    &lng=
+    &long=
+    ---------------------------------
+    */
+
+    const latQ =
+      u.searchParams.get("lat");
+
+
+    const lonQ =
+      u.searchParams.get("lon") ||
+      u.searchParams.get("lng") ||
+      u.searchParams.get("long");
+
+
+    if (
+      latQ &&
+      lonQ
+    ) {
+
+      const lat =
+        parseFloat(latQ);
+
+      const lng =
+        parseFloat(lonQ);
+
+
+      if (
+        Number.isFinite(lat) &&
+        Number.isFinite(lng)
+      ) {
+
+        return {
+          lat: lat,
+          lng: lng
+        };
+
+      }
+
+    }
+
+
+
+    /*
+    ---------------------------------
+    3.
+
+    ?ll=36.12345,139.12345
+    ---------------------------------
+    */
+
+    const ll =
+      u.searchParams.get("ll");
+
+
+    if (ll) {
+
+      const parts =
+        ll.split(",");
+
+
+      if (
+        parts.length >= 2
+      ) {
+
+        const lat =
+          parseFloat(parts[0]);
+
+        const lng =
+          parseFloat(parts[1]);
+
+
+        if (
+          Number.isFinite(lat) &&
+          Number.isFinite(lng)
+        ) {
+
+          return {
+            lat: lat,
+            lng: lng
+          };
+
+        }
+
+      }
+
+    }
+
+
+
+    /*
+    ---------------------------------
+    4.
+
+    #...ll=36.12345,139.12345
+    ---------------------------------
+    */
+
+    if (
+      u.hash &&
+      u.hash.includes("ll=")
+    ) {
+
+      const match =
+        u.hash.match(
+          /ll=([0-9.+-]+),([0-9.+-]+)/
+        );
+
+
+      if (match) {
+
+        const lat =
+          parseFloat(match[1]);
+
+        const lng =
+          parseFloat(match[2]);
+
+
+        if (
+          Number.isFinite(lat) &&
+          Number.isFinite(lng)
+        ) {
+
+          return {
+            lat: lat,
+            lng: lng
+          };
+
+        }
+
+      }
+
+    }
+
+
+
+    /*
+    ---------------------------------
+    5.
+
+    旧マピオン形式
+
+    ?nl=36/16/35.98
+    &el=139/15/34.17
+    ---------------------------------
+    */
+
+    const nl =
+      u.searchParams.get("nl");
+
+    const el =
+      u.searchParams.get("el");
+
+
+    if (
+      nl &&
+      el
+    ) {
+
+      const lat =
+        parseMapionAngle(nl);
+
+      const lng =
+        parseMapionAngle(el);
+
+
+      if (
+        Number.isFinite(lat) &&
+        Number.isFinite(lng)
+      ) {
+
+        return {
+          lat: lat,
+          lng: lng
+        };
+
+      }
+
+    }
+
+
+
+    return null;
+
+  }
+
+  catch (e) {
+
+    console.error(e);
+
+    return null;
+
+  }
+
+}
+
+
+
+/*
+=================================================
+Tokyo測地系
+↓
+WGS84
+=================================================
+*/
+
+function tokyoToWgs(
+  latTokyo,
+  lonTokyo
+) {
+
+
+  const wgsLat =
+
+    latTokyo
+    - 0.00010695 * latTokyo
+    + 0.000017464 * lonTokyo
+    + 0.0046017;
+
+
+
+  const wgsLon =
+
+    lonTokyo
+    - 0.000046038 * latTokyo
+    - 0.000083043 * lonTokyo
+    + 0.010040;
+
+
+
+  return {
+
+    lat: wgsLat,
+
+    lng: wgsLon
+
+  };
+
+}
+
+
+
+/*
+=================================================
+座標をクリップボードへコピー
+=================================================
+*/
+
+async function copyText(text) {
+
+
+  /*
+  Clipboard API
+  */
+
+  try {
+
+
+    if (
+      navigator.clipboard &&
+      navigator.clipboard.writeText
+    ) {
+
+
+      await navigator.clipboard.writeText(
+        text
+      );
+
+
+      return true;
+
+    }
+
+
+  }
+
+  catch (e) {
+
+    console.log(
+      "Clipboard API失敗",
+      e
+    );
+
+  }
+
+
+
+  /*
+  古いコピー方式
+  */
+
+  try {
+
+
+    const ta =
+      document.createElement("textarea");
+
+
+    ta.value =
+      text;
+
+
+    ta.style.position =
+      "fixed";
+
+    ta.style.left =
+      "-9999px";
+
+
+    document.body.appendChild(ta);
+
+
+    ta.focus();
+
+    ta.select();
+
+
+    const result =
+      document.execCommand("copy");
+
+
+    document.body.removeChild(ta);
+
+
+    return result;
+
+
+  }
+
+  catch (e) {
+
+
+    console.log(
+      "コピー失敗",
+      e
+    );
+
+
+    return false;
+
+  }
+
+}
+
+
+
+/*
+=================================================
+マピオンURL処理
+=================================================
+*/
+
+async function handleUrl(urlText) {
+
+
+  /*
+  古い水利マップボタンを隠す
+  */
+
+  mapArea.style.display =
+    "none";
+
+
+  coordEl.textContent =
+    "";
+
+
+  log(
+    "マピオンURLから座標を取得中…"
+  );
+
+
+
+  /*
+  座標取得
+  */
+
+  const coords =
+    extractLatLngFromMapion(
+      urlText
+    );
+
+
+
+  if (!coords) {
+
+
+    log(
+`マピオンURLから座標を読み取れませんでした。
+
+URLを確認して、
+最初からやり直してください。`
+    );
+
+
+    return;
+
+  }
+
+
+
+  /*
+  Tokyo測地系
+  ↓
+  WGS84
+  */
+
+  const converted =
+    tokyoToWgs(
+      coords.lat,
+      coords.lng
+    );
+
+
+
+  const lat6 =
+    converted.lat.toFixed(6);
+
+
+  const lng6 =
+    converted.lng.toFixed(6);
+
+
+
+  const coordStr =
+    `${lat6},${lng6}`;
+
+
+
+  /*
+  座標を画面表示
+  */
+
+  coordEl.textContent =
+    coordStr;
+
+
+
+  /*
+  クリップボードへコピー
+  */
+
+  const copied =
+    await copyText(
+      coordStr
+    );
+
+
+
+  if (copied) {
+
+
+    log(
+`✓ 座標をコピーしました。
+
+${coordStr}
+
+Tokyo → WGS84 補正済み
+
+下の
+「水利マップを開く」
+を押してください。
+
+水利マップが開いたら
+Googleマップの
+「ここで検索」に
+ペーストしてください。`
+    );
+
+
+  }
+
+  else {
+
+
+    log(
+`座標を計算しました。
+
+${coordStr}
+
+Tokyo → WGS84 補正済み
+
+自動コピーできませんでした。
+
+上の座標を長押しして
+コピーしてください。
+
+その後、
+「水利マップを開く」
+を押してください。`
+    );
+
+  }
+
+
+
+  /*
+  水利マップボタンを表示
+
+  ★ここでは自動的に開かない
+  */
+
+  mapArea.style.display =
+    "block";
+
+}
+
+
+
+/*
+=================================================
+実行ボタン
+
+クリップボードから
+マピオンURLを読む
+=================================================
+*/
+
+async function runOnce() {
+
+
+  /*
+  画面初期化
+  */
+
+  mapArea.style.display =
+    "none";
+
+
+  coordEl.textContent =
+    "";
+
+
+  fbBox.style.display =
+    "none";
+
+
+  log(
+    "クリップボードからURLを取得中…"
+  );
+
+
+
+  try {
+
+
+    if (
+      !navigator.clipboard ||
+      !navigator.clipboard.readText
+    ) {
+
+      throw new Error(
+        "Clipboard read unavailable"
+      );
+
+    }
+
+
+
+    const text =
+      await navigator.clipboard.readText();
+
+
+
+    if (
+      !text ||
+      !/^https?:\/\//i.test(
+        text.trim()
+      )
+    ) {
+
+      throw new Error(
+        "URLではありません"
+      );
+
+    }
+
+
+
+    await handleUrl(
+      text.trim()
+    );
+
+
+  }
+
+  catch (e) {
+
+
+    console.log(
+      "クリップボード読み取り失敗",
+      e
+    );
+
+
+    log(
+`クリップボード読み取り失敗。
+
+下の入力欄に
+マピオンURLを貼り付けてください。`
+    );
+
+
+    fbBox.style.display =
+      "block";
+
+
+    fbIn.focus();
+
+  }
+
+}
+
+
+
+/*
+=================================================
+実行ボタン
+=================================================
+*/
+
+runBtn.addEventListener(
+  "click",
+  runOnce
+);
+
+
+
+/*
+=================================================
+手動入力
+「続行」
+=================================================
+*/
+
+fbBtn.addEventListener(
+  "click",
+  async function () {
+
+
+    const value =
+      fbIn.value.trim();
+
+
+
+    if (!value) {
+
+
+      alert(
+        "マピオンURLを貼り付けてください"
+      );
+
+
+      return;
+
+    }
+
+
+
+    await handleUrl(
+      value
+    );
+
+  }
+);
+
+
+</script>
+
+
+</body>
+
+</html>
