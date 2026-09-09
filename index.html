@@ -1,139 +1,184 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>マピオンURL → 座標コピー＆マイマップ起動</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>マピオンURL → 座標コピー＆水利マップ</title>
 
 <style>
-  body {
-    font-family: system-ui, -apple-system, Segoe UI, Roboto, Noto Sans JP, sans-serif;
-    margin: 0;
-    padding: 16px;
-    line-height: 1.6;
-  }
 
-  h1 {
-    font-size: 18px;
-    margin: 0 0 8px;
-  }
+body {
+  font-family:
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    "Noto Sans JP",
+    sans-serif;
 
-  button {
-    font-size: 16px;
-    padding: 12px 16px;
-    width: 100%;
-  }
+  margin: 0;
+  padding: 16px;
+  line-height: 1.6;
+}
 
-  .log {
-    margin-top: 12px;
-    font-size: 14px;
-    white-space: pre-wrap;
-    background: #f6f6f6;
-    padding: 10px;
-    border-radius: 8px;
-  }
+h1 {
+  font-size: 18px;
+  margin: 0 0 8px;
+}
 
-  .hint {
-    color: #666;
-    font-size: 13px;
-    margin-top: 8px;
-  }
+button {
+  font-size: 16px;
+  padding: 12px 16px;
+  width: 100%;
+  cursor: pointer;
+}
 
-  .fallback {
-    display: none;
-    margin-top: 12px;
-  }
+.log {
+  margin-top: 12px;
+  font-size: 14px;
+  white-space: pre-wrap;
+  background: #f6f6f6;
+  padding: 10px;
+  border-radius: 8px;
+}
 
-  textarea {
-    width: 100%;
-    height: 100px;
-    font-size: 14px;
-    padding: 8px;
-    box-sizing: border-box;
-  }
+.hint {
+  color: #666;
+  font-size: 13px;
+  margin-top: 8px;
+}
 
-  .steps {
-    margin: 12px 0;
-    font-size: 14px;
-  }
+.fallback {
+  display: none;
+  margin-top: 12px;
+}
 
-  .steps b {
-    display: block;
-    margin-bottom: 4px;
-  }
+textarea {
+  width: 100%;
+  height: 100px;
+  font-size: 14px;
+  padding: 8px;
+  box-sizing: border-box;
+}
 
-  .badge {
-    display: inline-block;
-    font-size: 12px;
-    color: #fff;
-    background: #0a7;
-    padding: 2px 6px;
-    border-radius: 6px;
-    margin-left: 6px;
-  }
+.steps {
+  margin: 12px 0;
+  font-size: 14px;
+}
+
+.steps b {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.badge {
+  display: inline-block;
+  font-size: 12px;
+  color: #fff;
+  background: #0a7;
+  padding: 2px 6px;
+  border-radius: 6px;
+  margin-left: 6px;
+}
+
 </style>
 </head>
 
+
 <body>
 
+
 <h1>
-  マピオンURL → 座標コピー＆マイマップ起動
-  <span class="badge">水利マップ</span>
+マピオンURL → 座標コピー＆マイマップ起動
+<span class="badge">水利マップ</span>
 </h1>
 
+
 <div class="steps">
-  <b>• 操作手順</b>
 
-  ① 災害情報MAILの災害地点URLをコピー<br>
+<b>• 操作手順</b>
 
-  ② 本サイトの「実行」ボタンを押す。次にペーストを押す<br>
+① 災害情報MAILの災害地点URLをコピー<br>
 
-  ③ Googleマップが開くので、「ここで検索」をタップしてペーストを選ぶ。<br>
+② 本サイトの「実行」ボタンを押す<br>
 
-  ④ 発生場所にピンが立つはず！<br><br>
+③ クリップボードを読み取れない場合は、
+下の入力欄にマピオンURLを貼り付けて「続行」を押す<br>
 
-  ナビを開始しないでください。経路検索だけにしてください。<br>
-  現着した時に、現在地から火点までの距離がわかるはずです。<br><br>
+④ 水利マップが開いたら
+「ここで検索」をタップしてペーストする<br>
 
-  上手くいかなかったら最初からやり直してください。<br>
-  ナビ開始すると水利マップが消えちゃうよん。
+⑤ 発生場所にピンが立ちます<br><br>
+
+<strong>
+ナビは開始しないでください。
+</strong><br>
+
+経路検索だけにしてください。<br>
+
+現着した時に、
+現在地から火点までの距離を確認できます。<br><br>
+
+ナビを開始すると
+水利マップが消える場合があります。
+
 </div>
 
 
-<button id="runBtn">実行</button>
+
+<button id="runBtn">
+実行
+</button>
+
 
 <div class="hint">
-  ※ 先にマピオンのURLをコピーしてから押してください。<br>
-  HTTPS配信が必要です（GitHub PagesならOK）。
+
+※ 先にマピオンのURLをコピーしてから押してください。<br>
+
+※ マピオン座標を
+Tokyo測地系 → WGS84へ変換します。<br>
+
+※ HTTPS環境が必要です
+（GitHub PagesならOK）。
+
 </div>
+
+
 
 <div class="log" id="log">
 待機中…
 </div>
 
 
+
 <div class="fallback" id="fallbackBox">
 
-  <p>
-    クリップボードの取得に失敗したので、
-    ここに<strong>マピオンのURLを貼り付け</strong>て
-    「続行」を押してください。
-  </p>
+<p>
+クリップボードの取得に失敗しました。<br><br>
 
-  <textarea
-    id="fallbackInput"
-    placeholder="ここにマピオンのURLを貼り付け">
-  </textarea>
+ここに
+<strong>マピオンのURLを貼り付け</strong>
+て「続行」を押してください。
+</p>
 
-  <button id="fallbackBtn">
-    続行
-  </button>
+
+<textarea
+id="fallbackInput"
+placeholder="ここにマピオンのURLを貼り付け">
+</textarea>
+
+
+<button id="fallbackBtn">
+続行
+</button>
 
 </div>
 
 
 
 <script>
+
 
 /*
 =================================================
@@ -142,24 +187,38 @@
 */
 
 const MYMAP_URL =
-  'https://www.google.com/maps/d/viewer?hl=ja&mid=1bsmlEhct96yonZynraZzo3WGYrcriWs&ll=36.31131561559538%2C139.2035191463119&z=17';
+  "https://www.google.com/maps/d/viewer?hl=ja&mid=1bsmlEhct96yonZynraZzo3WGYrcriWs&ll=36.31131561559538%2C139.2035191463119&z=17";
+
+
+
+/*
+=================================================
+HTML要素
+=================================================
+*/
 
 const logEl =
-document.getElementById("log");
+  document.getElementById("log");
 
 const runBtn =
-document.getElementById("runBtn");
+  document.getElementById("runBtn");
 
 const fbBox =
-document.getElementById("fallbackBox");
+  document.getElementById("fallbackBox");
 
 const fbIn =
-document.getElementById("fallbackInput");
+  document.getElementById("fallbackInput");
 
 const fbBtn =
-document.getElementById("fallbackBtn");
+  document.getElementById("fallbackBtn");
 
 
+
+/*
+=================================================
+ログ表示
+=================================================
+*/
 
 function log(msg) {
 
@@ -173,7 +232,10 @@ function log(msg) {
 
 /*
 =================================================
-マピオン旧形式
+マピオン旧形式の角度を
+10進数へ変換
+
+例
 
 36/16/35.98
 
@@ -186,27 +248,34 @@ function log(msg) {
 function parseMapionAngle(input) {
 
   const s =
-  String(input ?? "").trim();
+    String(input ?? "").trim();
+
 
   if (!s) {
+
     return NaN;
+
   }
 
 
   const parts =
-  s.split("/");
+    s.split("/");
 
+
+  /*
+  度 / 分 / 秒
+  */
 
   if (parts.length === 3) {
 
     const d =
-    parseFloat(parts[0]);
+      parseFloat(parts[0]);
 
     const m =
-    parseFloat(parts[1]);
+      parseFloat(parts[1]);
 
     const sec =
-    parseFloat(parts[2]);
+      parseFloat(parts[2]);
 
 
     if (
@@ -215,22 +284,32 @@ function parseMapionAngle(input) {
       Number.isFinite(sec)
     ) {
 
-      return d + m / 60 + sec / 3600;
+      return (
+        d +
+        m / 60 +
+        sec / 3600
+      );
 
     }
+
 
     return NaN;
 
   }
 
 
+
+  /*
+  度 / 分
+  */
+
   if (parts.length === 2) {
 
     const d =
-    parseFloat(parts[0]);
+      parseFloat(parts[0]);
 
     const m =
-    parseFloat(parts[1]);
+      parseFloat(parts[1]);
 
 
     if (
@@ -238,22 +317,33 @@ function parseMapionAngle(input) {
       Number.isFinite(m)
     ) {
 
-      return d + m / 60;
+      return (
+        d +
+        m / 60
+      );
 
     }
+
 
     return NaN;
 
   }
 
 
+
+  /*
+  すでに10進数
+  */
+
   const v =
-  parseFloat(s);
+    parseFloat(s);
 
 
-  return Number.isFinite(v)
-    ? v
-    : NaN;
+  return (
+    Number.isFinite(v)
+      ? v
+      : NaN
+  );
 
 }
 
@@ -261,7 +351,8 @@ function parseMapionAngle(input) {
 
 /*
 =================================================
-マピオンURLから緯度経度を抽出
+マピオンURLから
+緯度・経度を抽出
 =================================================
 */
 
@@ -270,13 +361,13 @@ function extractLatLngFromMapion(urlStr) {
   try {
 
     const u =
-    new URL(urlStr.trim());
+      new URL(urlStr.trim());
 
 
 
     /*
     ---------------------------------
-    1)
+    1.
 
     /m2/36.12345,139.12345
     ---------------------------------
@@ -287,9 +378,9 @@ function extractLatLngFromMapion(urlStr) {
     ) {
 
       const parts =
-      u.pathname
-      .slice(4)
-      .split(",");
+        u.pathname
+          .slice(4)
+          .split(",");
 
 
       if (
@@ -297,10 +388,10 @@ function extractLatLngFromMapion(urlStr) {
       ) {
 
         const lat =
-        parseFloat(parts[0]);
+          parseFloat(parts[0]);
 
         const lng =
-        parseFloat(parts[1]);
+          parseFloat(parts[1]);
 
 
         if (
@@ -309,8 +400,8 @@ function extractLatLngFromMapion(urlStr) {
         ) {
 
           return {
-            lat,
-            lng
+            lat: lat,
+            lng: lng
           };
 
         }
@@ -323,26 +414,26 @@ function extractLatLngFromMapion(urlStr) {
 
     /*
     ---------------------------------
-    2)
+    2.
 
     ?lat=...
     &lon=...
 
     または
 
-    lng
-    long
+    &lng=
+    &long=
     ---------------------------------
     */
 
     const latQ =
-    u.searchParams.get("lat");
+      u.searchParams.get("lat");
 
 
     const lonQ =
-    u.searchParams.get("lon") ||
-    u.searchParams.get("lng") ||
-    u.searchParams.get("long");
+      u.searchParams.get("lon") ||
+      u.searchParams.get("lng") ||
+      u.searchParams.get("long");
 
 
     if (
@@ -351,10 +442,10 @@ function extractLatLngFromMapion(urlStr) {
     ) {
 
       const lat =
-      parseFloat(latQ);
+        parseFloat(latQ);
 
       const lng =
-      parseFloat(lonQ);
+        parseFloat(lonQ);
 
 
       if (
@@ -363,8 +454,8 @@ function extractLatLngFromMapion(urlStr) {
       ) {
 
         return {
-          lat,
-          lng
+          lat: lat,
+          lng: lng
         };
 
       }
@@ -375,20 +466,20 @@ function extractLatLngFromMapion(urlStr) {
 
     /*
     ---------------------------------
-    3)
+    3.
 
     ?ll=36.12345,139.12345
     ---------------------------------
     */
 
     const ll =
-    u.searchParams.get("ll");
+      u.searchParams.get("ll");
 
 
     if (ll) {
 
       const parts =
-      ll.split(",");
+        ll.split(",");
 
 
       if (
@@ -396,10 +487,10 @@ function extractLatLngFromMapion(urlStr) {
       ) {
 
         const lat =
-        parseFloat(parts[0]);
+          parseFloat(parts[0]);
 
         const lng =
-        parseFloat(parts[1]);
+          parseFloat(parts[1]);
 
 
         if (
@@ -408,8 +499,8 @@ function extractLatLngFromMapion(urlStr) {
         ) {
 
           return {
-            lat,
-            lng
+            lat: lat,
+            lng: lng
           };
 
         }
@@ -422,7 +513,7 @@ function extractLatLngFromMapion(urlStr) {
 
     /*
     ---------------------------------
-    4)
+    4.
 
     #...ll=36.12345,139.12345
     ---------------------------------
@@ -434,18 +525,18 @@ function extractLatLngFromMapion(urlStr) {
     ) {
 
       const m =
-      u.hash.match(
-        /ll=([0-9.+-]+),([0-9.+-]+)/
-      );
+        u.hash.match(
+          /ll=([0-9.+-]+),([0-9.+-]+)/
+        );
 
 
       if (m) {
 
         const lat =
-        parseFloat(m[1]);
+          parseFloat(m[1]);
 
         const lng =
-        parseFloat(m[2]);
+          parseFloat(m[2]);
 
 
         if (
@@ -454,8 +545,8 @@ function extractLatLngFromMapion(urlStr) {
         ) {
 
           return {
-            lat,
-            lng
+            lat: lat,
+            lng: lng
           };
 
         }
@@ -468,9 +559,9 @@ function extractLatLngFromMapion(urlStr) {
 
     /*
     ---------------------------------
-    5)
+    5.
 
-    古いマピオン形式
+    旧マピオン形式
 
     ?nl=36/16/35.98
     &el=139/15/34.17
@@ -478,10 +569,10 @@ function extractLatLngFromMapion(urlStr) {
     */
 
     const nl =
-    u.searchParams.get("nl");
+      u.searchParams.get("nl");
 
     const el =
-    u.searchParams.get("el");
+      u.searchParams.get("el");
 
 
     if (
@@ -490,10 +581,10 @@ function extractLatLngFromMapion(urlStr) {
     ) {
 
       const lat =
-      parseMapionAngle(nl);
+        parseMapionAngle(nl);
 
       const lng =
-      parseMapionAngle(el);
+        parseMapionAngle(el);
 
 
       if (
@@ -502,8 +593,8 @@ function extractLatLngFromMapion(urlStr) {
       ) {
 
         return {
-          lat,
-          lng
+          lat: lat,
+          lng: lng
         };
 
       }
@@ -516,7 +607,9 @@ function extractLatLngFromMapion(urlStr) {
 
   }
 
-  catch {
+  catch (e) {
+
+    console.error(e);
 
     return null;
 
@@ -528,11 +621,11 @@ function extractLatLngFromMapion(urlStr) {
 
 /*
 =================================================
-日本測地系 Tokyo/Bessel
+Tokyo測地系
 ↓
 WGS84
 
-全国向け一次近似
+一次近似式
 =================================================
 */
 
@@ -542,17 +635,21 @@ function tokyoToWgs(
 ) {
 
   const wgsLat =
+
     latTokyo
     - 0.00010695 * latTokyo
     + 0.000017464 * lonTokyo
     + 0.0046017;
 
 
+
   const wgsLon =
+
     lonTokyo
     - 0.000046038 * latTokyo
     - 0.000083043 * lonTokyo
     + 0.010040;
+
 
 
   return {
@@ -569,21 +666,89 @@ function tokyoToWgs(
 
 /*
 =================================================
-クリップボードへコピー
+クリップボードへ座標コピー
 =================================================
 */
 
 async function copyText(text) {
 
+  /*
+  新しいClipboard API
+  */
+
   try {
 
-    await navigator.clipboard.writeText(text);
+    if (
+      navigator.clipboard &&
+      navigator.clipboard.writeText
+    ) {
 
-    return true;
+      await navigator.clipboard.writeText(text);
+
+      return true;
+
+    }
 
   }
 
-  catch {
+  catch (e) {
+
+    console.log(
+      "Clipboard API書き込み失敗",
+      e
+    );
+
+  }
+
+
+
+  /*
+  古い方式でフォールバック
+  */
+
+  try {
+
+    const ta =
+      document.createElement("textarea");
+
+
+    ta.value =
+      text;
+
+
+    ta.style.position =
+      "fixed";
+
+    ta.style.left =
+      "-9999px";
+
+
+    document.body.appendChild(ta);
+
+
+    ta.focus();
+
+    ta.select();
+
+
+    const result =
+      document.execCommand("copy");
+
+
+    document.body.removeChild(ta);
+
+
+    return result;
+
+  }
+
+  catch (e) {
+
+    console.log(
+      "フォールバックコピー失敗",
+      e
+    );
+
 
     return false;
 
@@ -597,40 +762,19 @@ async function copyText(text) {
 =================================================
 水利 My Maps を開く
 
-重要：
+新しいタブではなく
+現在のページから直接移動する。
 
-以前あった
-
-② 座標指定でGoogle Mapsアプリ強制起動
-③ My Maps Web版を再度開く
-
-という処理は削除。
-
-My Mapsだけを開く。
+これにより
+ポップアップブロックの影響を
+受けにくくする。
 =================================================
 */
 
 function openMyMap() {
 
-  const a =
-  document.createElement("a");
-
-
-  a.href =
-  MYMAPS_URL;
-
-
-  a.rel =
-  "noopener";
-
-
-  document.body.appendChild(a);
-
-
-  a.click();
-
-
-  document.body.removeChild(a);
+  window.location.href =
+    MYMAP_URL;
 
 }
 
@@ -638,14 +782,24 @@ function openMyMap() {
 
 /*
 =================================================
-URL処理
+マピオンURL処理
 =================================================
 */
 
 async function handleUrl(urlText) {
 
+
+  log(
+    "マピオンURLから座標を取得中…"
+  );
+
+
+
   const coords =
-  extractLatLngFromMapion(urlText);
+    extractLatLngFromMapion(
+      urlText
+    );
+
 
 
   if (!coords) {
@@ -653,12 +807,10 @@ async function handleUrl(urlText) {
     log(
 `マピオンURLから座標を読み取れませんでした。
 
-対応形式：
-・/m2/形式
-・lat & lon形式
-・ll形式
-・nl & el形式`
+URLを確認して、
+最初からやり直してください。`
     );
+
 
     return;
 
@@ -667,43 +819,48 @@ async function handleUrl(urlText) {
 
 
   /*
-  常時
-  日本測地系 → WGS84
+  Tokyo測地系
+  ↓
+  WGS84
   */
 
   const converted =
-  tokyoToWgs(
-    coords.lat,
-    coords.lng
-  );
+    tokyoToWgs(
+      coords.lat,
+      coords.lng
+    );
+
 
 
   const lat6 =
-  converted.lat.toFixed(6);
+    converted.lat.toFixed(6);
 
 
   const lng6 =
-  converted.lng.toFixed(6);
+    converted.lng.toFixed(6);
+
 
 
   const coordStr =
-  `${lat6},${lng6}`;
+    `${lat6},${lng6}`;
 
 
 
   /*
-  座標コピー
+  座標をコピー
   */
 
   const ok =
-  await copyText(coordStr);
+    await copyText(
+      coordStr
+    );
 
 
 
   if (ok) {
 
     log(
-`座標をコピーしました：
+`座標をコピーしました。
 
 ${coordStr}
 
@@ -711,8 +868,9 @@ Tokyo → WGS84 補正済み
 
 水利マップを開きます。
 
-Googleマップの検索欄に
-貼り付けてください。`
+Googleマップの
+「ここで検索」に
+ペーストしてください。`
     );
 
   }
@@ -726,9 +884,9 @@ ${coordStr}
 
 Tokyo → WGS84 補正済み
 
-クリップボードへのコピーに失敗しました。
+自動コピーに失敗しました。
 
-座標を手動でコピーしてください。`
+この座標を手動でコピーしてください。`
     );
 
 
@@ -743,7 +901,7 @@ ${coordStr}`
 
 
   /*
-  水利My Mapsだけを開く
+  水利My Mapsを開く
   */
 
   openMyMap();
@@ -755,37 +913,76 @@ ${coordStr}`
 /*
 =================================================
 実行ボタン
+
+クリップボードから
+マピオンURLを取得
 =================================================
 */
 
 async function runOnce() {
+
 
   log(
     "クリップボードからURLを取得中…"
   );
 
 
-  try {
+  fbBox.style.display =
+    "none";
 
-    const text =
-    await navigator.clipboard.readText();
+
+
+  try {
 
 
     if (
-      !text ||
-      !/^https?:\/\//i.test(text)
+      !navigator.clipboard ||
+      !navigator.clipboard.readText
     ) {
 
-      throw new Error();
+      throw new Error(
+        "Clipboard read not available"
+      );
 
     }
 
 
-    await handleUrl(text);
+
+    const text =
+      await navigator.clipboard.readText();
+
+
+
+    if (
+      !text ||
+      !/^https?:\/\//i.test(
+        text.trim()
+      )
+    ) {
+
+      throw new Error(
+        "URLではありません"
+      );
+
+    }
+
+
+
+    await handleUrl(
+      text.trim()
+    );
+
 
   }
 
-  catch {
+  catch (e) {
+
+
+    console.log(
+      "クリップボード読み取り失敗",
+      e
+    );
+
 
     log(
 `クリップボード読み取り失敗。
@@ -796,7 +993,7 @@ async function runOnce() {
 
 
     fbBox.style.display =
-    "block";
+      "block";
 
 
     fbIn.focus();
@@ -809,7 +1006,7 @@ async function runOnce() {
 
 /*
 =================================================
-イベント
+実行ボタン
 =================================================
 */
 
@@ -820,29 +1017,40 @@ runBtn.addEventListener(
 
 
 
+/*
+=================================================
+手動入力時の続行ボタン
+=================================================
+*/
+
 fbBtn.addEventListener(
   "click",
-  () => {
+  async function () {
+
 
     const v =
-    fbIn.value.trim();
+      fbIn.value.trim();
+
 
 
     if (!v) {
 
       alert(
-        "URLを貼り付けてください"
+        "マピオンURLを貼り付けてください"
       );
+
 
       return;
 
     }
 
 
-    handleUrl(v);
+
+    await handleUrl(v);
 
   }
 );
+
 
 </script>
 
