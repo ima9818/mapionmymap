@@ -151,10 +151,8 @@ textarea {
 ④ 座標のコピーが完了したら画面下の
 「水利マップを開く」を押す<br>
 
-⑤ Googleマップの「ここで検索」をタップして
-ペーストする<br>
-
-⑥ 発生場所にピンが立ちます<br><br>
+⑤ <b>自動的に現場を中心にズームして開きます。</b><br>
+※赤いピン（目印）を立てたい場合のみ、Googleマップの「ここで検索」にペーストしてください。<br><br>
 
 <strong>
 ⚠️ ナビは開始しないでください。マイマップのバージョンアップには対応していません。
@@ -924,6 +922,24 @@ URLを確認して、
 
 
 
+  /* ★★★ マップURLの動的生成（Androidアプリ強制起動 ＆ 自動ズーム） ★★★ */
+  const mapBtnEl = document.getElementById("mapBtn");
+  
+  // 共通のパラメータ（座標とズーム倍率）
+  const params = `&ll=${lat6},${lng6}&z=18`;
+  
+  // スマホがAndroidかどうかを自動判定
+  const isAndroid = /android/i.test(navigator.userAgent);
+
+  if (isAndroid) {
+    // Android用：強制的にGoogleマップアプリを起動させる記述
+    mapBtnEl.href = `intent://www.google.com/maps/d/viewer?mid=1bsmlEhct96yonZynraZzo3WGYrcriWs${params}#Intent;scheme=https;package=com.google.android.apps.maps;end;`;
+  } else {
+    // iPhone・PC用：通常のリンク
+    mapBtnEl.href = `https://www.google.com/maps/d/viewer?mid=1bsmlEhct96yonZynraZzo3WGYrcriWs${params}`;
+  }
+
+
   /*
   クリップボードへコピー
   */
@@ -942,16 +958,13 @@ URLを確認して、
 `✓ 座標をコピーしました。
 
 ${coordStr}
+(Tokyo → WGS84 補正済み)
 
-Tokyo → WGS84 補正済み
+下の「水利マップを開く」を押すと、
+自動的に現場を中心にズームして開きます。
 
-下の
-「水利マップを開く」
-を押してください。
-
-水利マップが開いたら
-Googleマップの
-「ここで検索」に
+※赤いピン（目印）を立てたい場合のみ、
+Googleマップの「ここで検索」に
 ペーストしてください。`
     );
 
@@ -965,17 +978,13 @@ Googleマップの
 `座標を計算しました。
 
 ${coordStr}
-
-Tokyo → WGS84 補正済み
+(Tokyo → WGS84 補正済み)
 
 自動コピーできませんでした。
+上の座標を長押ししてコピーしてください。
 
-上の座標を長押しして
-コピーしてください。
-
-その後、
-「水利マップを開く」
-を押してください。`
+その後「水利マップを開く」を押すと、
+現場を中心にズームして開きます。`
     );
 
   }
@@ -984,8 +993,6 @@ Tokyo → WGS84 補正済み
 
   /*
   水利マップボタンを表示
-
-  ★ここでは自動的に開かない
   */
 
   mapArea.style.display =
