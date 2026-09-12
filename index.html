@@ -107,9 +107,8 @@ textarea {
 ① 災害情報MAILの災害地点URLをコピー<br>
 ② <b>下の枠内を長押しして「ペースト(貼り付け)」</b><br>
 ③ 「実行」を押す<br>
-④ 画面下の「水利マップを開く」を押す<br>
-⑤ Googleマップがアプリで開きます。<br>
-※Googleマップの「ここで検索」にペーストすると火点の座標が入ります。<br><br>
+④ <b>自動的に座標がコピーされ、マップが開きます。</b><br>
+⑤ マップの「ここで検索」にペーストして火点を出します。<br><br>
 <strong>⚠️ ナビは開始しないでください、水利が消えます。</strong><br>
 経路検索だけにしてください。<br>
 現着時に現在地から火点までの距離がわかると思うので、ホース本数の参考になると思います。
@@ -127,8 +126,8 @@ textarea {
 <div id="coord"></div>
 
 <div id="mapArea">
-<a id="mapBtn" href="#" target="_blank" rel="noopener noreferrer">水利マップを開く</a>
-<div class="hint">↑ 座標コピー完了後に、このボタンを押してください。</div>
+<a id="mapBtn" href="#" target="_blank" rel="noopener noreferrer">手動で水利マップを開く</a>
+<div class="hint">↑ 自動で開かない場合のみ押してください。</div>
 </div>
 
 <script>
@@ -258,11 +257,17 @@ async function handleUrl(urlText) {
 
   const copied = await copyText(coordStr);
   if (copied) {
-    log(`✓ 座標をコピーしました。\n\n${coordStr}\n\n下の「水利マップを開く」を押すと、Googleマップアプリが開きます。\n※Googleマップの「ここで検索」にペーストして火点を表示させ経路検索してください。＊ナビ開始はしない事！`);
+    log(`✓ 座標をコピーしました。\n水利マップを自動で開きます...`);
+    
+    // ★追加：コピー成功時は0.5秒後に自動でマップを開く
+    setTimeout(() => {
+      window.location.href = mapBtnEl.href;
+    }, 500);
+    
   } else {
-    log(`座標を計算しました。\n\n${coordStr}\n\n自動コピーできませんでした。上の座標を長押しして手動でコピーしてください。\nその後「水利マップを開く」を押すと、Googleマップアプリが開きます。`);
+    log(`⚠️ 自動コピーできませんでした。\n\n${coordStr}\n\n上の座標を長押しして手動でコピーしてから、下の「手動で水利マップを開く」を押してください。`);
+    mapArea.style.display = "block";
   }
-  mapArea.style.display = "block";
 }
 
 runBtn.addEventListener("click", async () => {
