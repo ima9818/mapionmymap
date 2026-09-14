@@ -67,6 +67,13 @@ textarea {
   border-radius: 8px;
   border: 2px solid #ccc;
 }
+.input-label {
+  font-size: 16px;
+  font-weight: bold;
+  color: #d32f2f;
+  text-align: center;
+  margin: 16px 0 8px;
+}
 #mapArea {
   display: none;
   margin-top: 18px;
@@ -107,8 +114,8 @@ textarea {
 ① <b>災害情報MAILの災害地点URLをコピー</b><br>
 ② <b>下の枠内を長押しして「ペースト(貼り付け)」</b><br>
 ③ <b>「実行」を押す</b><br>
-④ <b>自動的に座標がコピーされ、Googleマップが開きます。</b><br>
-⑤ <b>Googleマップが立ち上がったら、画面上部の「ここで検索」をタップしてペースト操作をすると火点の座標が入るので経路検索してください。。</b><br><br>
+④ <b>表示された「水利マップを開く」ボタンを押す</b><br>
+⑤ <b>Googleマップが立ち上がったら、画面上部の「ここで検索」をタップしてペースト操作をすると火点の座標が入るので経路検索してください。</b><br><br>
 <strong>⚠️ ナビを開始すると水利表示が消えます。</strong><br>
 ＊火点付近の水利を目的地とし、現着直前にナビを終了すると水利表示が戻る場合があります（機種による）。
 <br>
@@ -129,8 +136,7 @@ textarea {
 <div id="coord"></div>
 
 <div id="mapArea">
-<a id="mapBtn" href="#" target="_blank" rel="noopener noreferrer">手動で水利マップを開く</a>
-<div class="hint">↑ 自動で開かない場合のみ押してください。</div>
+<a id="mapBtn" href="#" target="_blank" rel="noopener noreferrer">水利マップを開く</a>
 </div>
 
 <script>
@@ -250,27 +256,19 @@ async function handleUrl(urlText) {
 
   coordEl.textContent = coordStr;
 
+  // 全機種共通の安全な標準リンク（https://）を生成
   const params = `&ll=${lat6},${lng6}&z=18`;
-  const isAndroid = /android/i.test(navigator.userAgent);
-  if (isAndroid) {
-    mapBtnEl.href = `intent://www.google.com/maps/d/viewer?mid=1bsmlEhct96yonZynraZzo3WGYrcriWs${params}#Intent;scheme=https;package=com.google.android.apps.maps;end;`;
-  } else {
-    mapBtnEl.href = `https://www.google.com/maps/d/viewer?mid=1bsmlEhct96yonZynraZzo3WGYrcriWs${params}`;
-  }
+  mapBtnEl.href = `https://www.google.com/maps/d/viewer?mid=1bsmlEhct96yonZynraZzo3WGYrcriWs${params}`;
 
   const copied = await copyText(coordStr);
   if (copied) {
-    log(`✓ 座標をコピーしました。\n水利マップを自動で開きます...`);
-    
-    // ★追加：コピー成功時は0.5秒後に自動でマップを開く
-    setTimeout(() => {
-      window.location.href = mapBtnEl.href;
-    }, 500);
-    
+    log(`✓ 座標をコピーしました。\n\n下の「水利マップを開く」ボタンを押してください。`);
   } else {
-    log(`⚠️ 自動コピーできませんでした。\n\n${coordStr}\n\n上の座標を長押しして手動でコピーしてから、下の「手動で水利マップを開く」を押してください。`);
-    mapArea.style.display = "block";
+    log(`⚠️ 自動コピーできませんでした。\n\n${coordStr}\n\n上の座標を長押しして手動でコピーしてから、下の「水利マップを開く」を押してください。`);
   }
+  
+  // マップを開くボタンを画面に表示する（ユーザーが手動で押す）
+  mapArea.style.display = "block";
 }
 
 runBtn.addEventListener("click", async () => {
