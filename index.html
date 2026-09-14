@@ -262,7 +262,7 @@ async function handleUrl(urlText) {
 
   const copied = await copyText(coordStr);
   if (copied) {
-    log(`✓ 座標をコピーしました。\n\n下の「水利マップを開く」ボタンを押してください。`);
+    log(`✓ 座標をコピーしました。\n\n下にスクロールして「水利マップを開く」ボタンを押してください。`);
   } else {
     log(`⚠️ 自動コピーできませんでした。\n\n${coordStr}\n\n上の座標を長押しして手動でコピーしてから、下の「水利マップを開く」を押してください。`);
   }
