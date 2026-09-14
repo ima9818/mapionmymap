@@ -67,6 +67,13 @@ textarea {
   border-radius: 8px;
   border: 2px solid #ccc;
 }
+.input-label {
+  font-size: 16px;
+  font-weight: bold;
+  color: #d32f2f;
+  text-align: center;
+  margin: 16px 0 8px;
+}
 #mapArea {
   display: none;
   margin-top: 18px;
@@ -108,7 +115,7 @@ textarea {
 ② <b>下の枠内を長押しして「ペースト(貼り付け)」</b><br>
 ③ <b>「実行」を押す</b><br>
 ④ <b>自動的に座標がコピーされ、Googleマップが開きます。</b><br>
-⑤ <b>Googleマップが立ち上がったら、画面上部の「ここで検索」をタップしてペースト操作をすると火点の座標が入るので経路検索してください。。</b><br><br>
+⑤ <b>Googleマップが立ち上がったら、画面上部の「ここで検索」をタップしてペースト操作をすると火点の座標が入るので経路検索してください。</b><br><br>
 <strong>⚠️ ナビを開始すると水利表示が消えます。</strong><br>
 ＊火点付近の水利を目的地とし、現着直前にナビを終了すると水利表示が戻る場合があります（機種による）。
 <br>
@@ -250,19 +257,15 @@ async function handleUrl(urlText) {
 
   coordEl.textContent = coordStr;
 
+  // ★修正箇所：強制起動用のコードを削除し、全機種共通の標準リンクに統一
   const params = `&ll=${lat6},${lng6}&z=18`;
-  const isAndroid = /android/i.test(navigator.userAgent);
-  if (isAndroid) {
-    mapBtnEl.href = `intent://www.google.com/maps/d/viewer?mid=1bsmlEhct96yonZynraZzo3WGYrcriWs${params}#Intent;scheme=https;package=com.google.android.apps.maps;end;`;
-  } else {
-    mapBtnEl.href = `https://www.google.com/maps/d/viewer?mid=1bsmlEhct96yonZynraZzo3WGYrcriWs${params}`;
-  }
+  mapBtnEl.href = `https://www.google.com/maps/d/viewer?mid=1bsmlEhct96yonZynraZzo3WGYrcriWs${params}`;
 
   const copied = await copyText(coordStr);
   if (copied) {
     log(`✓ 座標をコピーしました。\n水利マップを自動で開きます...`);
     
-    // ★追加：コピー成功時は0.5秒後に自動でマップを開く
+    // コピー成功時は0.5秒後に自動でマップを開く
     setTimeout(() => {
       window.location.href = mapBtnEl.href;
     }, 500);
