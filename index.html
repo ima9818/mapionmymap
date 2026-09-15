@@ -31,15 +31,6 @@ button {
   margin: 12px 0;
   font-size: 14px;
 }
-.badge {
-  display: inline-block;
-  font-size: 12px;
-  color: #fff;
-  background: #0a7;
-  padding: 2px 6px;
-  border-radius: 6px;
-  margin-left: 6px;
-}
 .hint {
   color: #666;
   font-size: 13px;
@@ -87,6 +78,7 @@ textarea {
   font-weight: 700;
   color: #000;
   text-decoration: none;
+  cursor: pointer;
 }
 #coord {
   margin-top: 12px;
@@ -97,43 +89,43 @@ textarea {
 }
 </style>
 </head>
-
 <body>
-
-<h1>
-  災害メール地図→ Googleマップ変換
-</h1>
-
+<h1>災害メール地図→ Googleマップ変換</h1>
 <div class="steps">
-<b>• 操作手順</b></br>
-<strong>① 災害情報MAILの災害地点URLをコピー</strong><br>
-<strong>② 下の枠内を長押しして「ペースト(貼り付け)」</strong><br>
-<strong>③ 「実行」を押す</strong><br>
-<strong>④ 下にスクロールして「水利マップを開く」ボタンを押す</strong><br>
-<strong>⑤ Googleマップが立ち上がったら、画面上部の「ここで検索」をタップしてペースト操作をすると火点の座標が入るので経路検索してください。</strong><br><br>
-<strong>⚠️ ナビを開始すると水利表示が消えます。</strong><br>
-＊火点付近の水利を目的地とし、現着直前にナビを終了すると水利表示が戻る場合があります（機種による）。<br>
-＊現着時に現在地から火点までの距離がわかると思うので、ホース本数の参考になると思います。<br>
-＊マイマップのバージョンアップには対応していません。<br>
+  <b>• 操作手順</b><br>
+  <strong>① 災害情報MAILの災害地点URLをコピー</strong><br>
+  <strong>② 下の枠内を長押しして「ペースト（貼り付け）」</strong><br>
+  <strong>③ 「実行」を押す</strong><br>
+  <strong>④ 下にスクロールして「水利マップを開く」ボタンを押す</strong><br>
+  <strong>⑤ Googleマップが立ち上がったら、画面上部の「ここで検索」をタップしてペースト操作をすると火点の座標が入るので経路検索してください。</strong>
+  <br><br>
+  <strong>⚠️ ナビを開始すると水利表示が消えます。</strong><br>
+  ＊火点付近の水利を目的地とし、現着直前にナビを終了すると水利表示が戻る場合があります（機種による）。<br>
+  ＊現着時に現在地から火点までの距離がわかると思うので、ホース本数の参考になると思います。<br>
+  ＊マイマップのバージョンアップには対応していません。<br>
 </div>
-
-
-<div class="input-label">👇 ここを長押ししてペースト 👇</div>
-<textarea id="urlInput" placeholder="災害情報MAILに記載されている災害地点のURLを貼り付けてください"></textarea>
-
+<div class="input-label">
+👇 ここを長押ししてペースト 👇
+</div>
+<textarea
+  id="urlInput"
+  placeholder="災害情報MAILに記載されている災害地点のURLを貼り付けてください">
+</textarea>
 <button id="runBtn">実行</button>
-
 <div class="hint">
 ※ マピオン座標をTokyo測地系 → WGS84へ変換します。<br>
 </div>
-
 <div class="log" id="log">待機中…</div>
 <div id="coord"></div>
-
 <div id="mapArea">
-<a id="mapBtn" href="#" target="_blank" rel="noopener noreferrer">水利マップを開く</a>
+  <!--
+    target="_blank" は付けない。
+    同じ画面からGoogle Mapsへ遷移させる。
+  -->
+  <a id="mapBtn" href="#">
+    水利マップを開く
+  </a>
 </div>
-
 <script>
 const logEl = document.getElementById("log");
 const runBtn = document.getElementById("runBtn");
@@ -141,141 +133,290 @@ const urlInput = document.getElementById("urlInput");
 const mapArea = document.getElementById("mapArea");
 const coordEl = document.getElementById("coord");
 const mapBtnEl = document.getElementById("mapBtn");
-
 function log(msg) {
   logEl.textContent = msg;
 }
-
+/* =====================================================
+   マピオン角度表記を10進数へ変換
+===================================================== */
 function parseMapionAngle(input) {
   const s = String(input ?? "").trim();
   if (!s) return NaN;
   const parts = s.split("/");
   if (parts.length === 3) {
-    const d = parseFloat(parts[0]), m = parseFloat(parts[1]), sec = parseFloat(parts[2]);
-    if (Number.isFinite(d) && Number.isFinite(m) && Number.isFinite(sec)) return d + m / 60 + sec / 3600;
+    const d = parseFloat(parts[0]);
+    const m = parseFloat(parts[1]);
+    const sec = parseFloat(parts[2]);
+    if (
+      Number.isFinite(d) &&
+      Number.isFinite(m) &&
+      Number.isFinite(sec)
+    ) {
+      return d + m / 60 + sec / 3600;
+    }
   }
   if (parts.length === 2) {
-    const d = parseFloat(parts[0]), m = parseFloat(parts[1]);
-    if (Number.isFinite(d) && Number.isFinite(m)) return d + m / 60;
+    const d = parseFloat(parts[0]);
+    const m = parseFloat(parts[1]);
+    if (
+      Number.isFinite(d) &&
+      Number.isFinite(m)
+    ) {
+      return d + m / 60;
+    }
   }
   const v = parseFloat(s);
   return Number.isFinite(v) ? v : NaN;
 }
-
+/* =====================================================
+   マピオンURLから緯度経度を取得
+===================================================== */
 function extractLatLngFromMapion(urlStr) {
   try {
     const u = new URL(urlStr.trim());
+    /* /m2/36.123,139.123 の形式 */
     if (u.pathname.startsWith("/m2/")) {
-      const parts = u.pathname.slice(4).split(",");
+      const parts = u.pathname
+        .slice(4)
+        .split(",");
       if (parts.length >= 2) {
-        const lat = parseFloat(parts[0]), lng = parseFloat(parts[1]);
-        if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng };
+        const lat = parseFloat(parts[0]);
+        const lng = parseFloat(parts[1]);
+        if (
+          Number.isFinite(lat) &&
+          Number.isFinite(lng)
+        ) {
+          return { lat, lng };
+        }
       }
     }
-    const latQ = u.searchParams.get("lat");
-    const lonQ = u.searchParams.get("lon") || u.searchParams.get("lng") || u.searchParams.get("long");
+    /* lat / lon */
+    const latQ =
+      u.searchParams.get("lat");
+    const lonQ =
+      u.searchParams.get("lon") ||
+      u.searchParams.get("lng") ||
+      u.searchParams.get("long");
     if (latQ && lonQ) {
-      const lat = parseFloat(latQ), lng = parseFloat(lonQ);
-      if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng };
+      const lat = parseFloat(latQ);
+      const lng = parseFloat(lonQ);
+      if (
+        Number.isFinite(lat) &&
+        Number.isFinite(lng)
+      ) {
+        return { lat, lng };
+      }
     }
-    const ll = u.searchParams.get("ll");
+    /* ll=lat,lng */
+    const ll =
+      u.searchParams.get("ll");
     if (ll) {
       const parts = ll.split(",");
       if (parts.length >= 2) {
-        const lat = parseFloat(parts[0]), lng = parseFloat(parts[1]);
-        if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng };
+        const lat = parseFloat(parts[0]);
+        const lng = parseFloat(parts[1]);
+        if (
+          Number.isFinite(lat) &&
+          Number.isFinite(lng)
+        ) {
+          return { lat, lng };
+        }
       }
     }
-    if (u.hash && u.hash.includes("ll=")) {
-      const match = u.hash.match(/ll=([0-9.+-]+),([0-9.+-]+)/);
+    /* URLハッシュ */
+    if (
+      u.hash &&
+      u.hash.includes("ll=")
+    ) {
+      const match =
+        u.hash.match(
+          /ll=([0-9.+-]+),([0-9.+-]+)/
+        );
       if (match) {
-        const lat = parseFloat(match[1]), lng = parseFloat(match[2]);
-        if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng };
+        const lat =
+          parseFloat(match[1]);
+        const lng =
+          parseFloat(match[2]);
+        if (
+          Number.isFinite(lat) &&
+          Number.isFinite(lng)
+        ) {
+          return { lat, lng };
+        }
       }
     }
-    const nl = u.searchParams.get("nl"), el = u.searchParams.get("el");
+    /* マピオン nl / el */
+    const nl =
+      u.searchParams.get("nl");
+    const el =
+      u.searchParams.get("el");
     if (nl && el) {
-      const lat = parseMapionAngle(nl), lng = parseMapionAngle(el);
-      if (Number.isFinite(lat) && Number.isFinite(lng)) return { lat, lng };
+      const lat =
+        parseMapionAngle(nl);
+      const lng =
+        parseMapionAngle(el);
+      if (
+        Number.isFinite(lat) &&
+        Number.isFinite(lng)
+      ) {
+        return { lat, lng };
+      }
     }
     return null;
-  } catch (e) {
+  }
+  catch (e) {
     return null;
   }
 }
-
-function tokyoToWgs(latTokyo, lonTokyo) {
-  const wgsLat = latTokyo - 0.00010695 * latTokyo + 0.000017464 * lonTokyo + 0.0046017;
-  const wgsLon = lonTokyo - 0.000046038 * latTokyo - 0.000083043 * lonTokyo + 0.010040;
-  return { lat: wgsLat, lng: wgsLon };
+/* =====================================================
+   Tokyo測地系 → WGS84
+===================================================== */
+function tokyoToWgs(
+  latTokyo,
+  lonTokyo
+) {
+  const wgsLat =
+    latTokyo
+    - 0.00010695 * latTokyo
+    + 0.000017464 * lonTokyo
+    + 0.0046017;
+  const wgsLon =
+    lonTokyo
+    - 0.000046038 * latTokyo
+    - 0.000083043 * lonTokyo
+    + 0.010040;
+  return {
+    lat: wgsLat,
+    lng: wgsLon
+  };
 }
-
+/* =====================================================
+   クリップボードへコピー
+===================================================== */
 async function copyText(text) {
   try {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
+    if (
+      navigator.clipboard &&
+      navigator.clipboard.writeText
+    ) {
       await navigator.clipboard.writeText(text);
       return true;
     }
-  } catch (e) {}
+  }
+  catch (e) {}
+  /* 古い端末用 */
   try {
-    const ta = document.createElement("textarea");
+    const ta =
+      document.createElement("textarea");
     ta.value = text;
     ta.style.position = "fixed";
     ta.style.left = "-9999px";
     document.body.appendChild(ta);
     ta.focus();
     ta.select();
-    const result = document.execCommand("copy");
+    const result =
+      document.execCommand("copy");
     document.body.removeChild(ta);
     return result;
-  } catch (e) {
+  }
+  catch (e) {
     return false;
   }
 }
-
+/* =====================================================
+   URL処理
+===================================================== */
 async function handleUrl(urlText) {
   mapArea.style.display = "none";
   coordEl.textContent = "";
   log("座標を取得中…");
-
-  const coords = extractLatLngFromMapion(urlText);
+  const coords =
+    extractLatLngFromMapion(urlText);
   if (!coords) {
-    log("座標を読み取れませんでした。\nURLが正しいか確認してください。");
+    log(
+      "座標を読み取れませんでした。\n" +
+      "URLが正しいか確認してください。"
+    );
     return;
   }
-
-  const converted = tokyoToWgs(coords.lat, coords.lng);
-  const lat6 = converted.lat.toFixed(6);
-  const lng6 = converted.lng.toFixed(6);
-  const coordStr = `${lat6},${lng6}`;
-
-  coordEl.textContent = coordStr;
-
-  // 全機種共通の安全な標準リンク（https://）を生成
-  const params = `&ll=${lat6},${lng6}&z=18`;
-  mapBtnEl.href = `https://www.google.com/maps/d/viewer?mid=1bsmlEhct96yonZynraZzo3WGYrcriWs${params}`;
-
-  const copied = await copyText(coordStr);
+  /* Tokyo → WGS84 */
+  const converted =
+    tokyoToWgs(
+      coords.lat,
+      coords.lng
+    );
+  const lat6 =
+    converted.lat.toFixed(6);
+  const lng6 =
+    converted.lng.toFixed(6);
+  const coordStr =
+    `${lat6},${lng6}`;
+  /* 座標表示 */
+  coordEl.textContent =
+    coordStr;
+  /* ===================================================
+     水利マップURL
+     ★ target="_blank" を使わない
+     ★ 同一画面でGoogle Mapsへ遷移
+  =================================================== */
+  const mapUrl =
+    "https://www.google.com/maps/d/viewer" +
+    "?mid=1bsmlEhct96yonZynraZzo3WGYrcriWs" +
+    `&ll=${lat6},${lng6}` +
+    "&z=18";
+  mapBtnEl.href =
+    mapUrl;
+  /* ===================================================
+     座標コピー
+  =================================================== */
+  const copied =
+    await copyText(coordStr);
   if (copied) {
-    log(`✓ 座標をコピーしました。\n\n下にスクロールして「水利マップを開く」ボタンを押してください。`);
-  } else {
-    log(`⚠️ 自動コピーできませんでした。\n\n${coordStr}\n\n上の座標を長押しして手動でコピーしてから、下の「水利マップを開く」を押してください。`);
+    log(
+      "✓ 座標をコピーしました。\n\n" +
+      "下にスクロールして\n" +
+      "「水利マップを開く」ボタンを押してください。"
+    );
   }
-  
-  // マップを開くボタンを画面に表示する（ユーザーが手動で押す）
-  mapArea.style.display = "block";
+  else {
+    log(
+      "⚠️ 自動コピーできませんでした。\n\n" +
+      coordStr +
+      "\n\n" +
+      "上の座標を長押しして手動でコピーしてから、\n" +
+      "「水利マップを開く」を押してください。"
+    );
+  }
+  /* ボタン表示 */
+  mapArea.style.display =
+    "block";
+  /* ボタン位置まで少しスクロール */
+  setTimeout(() => {
+    mapArea.scrollIntoView({
+      behavior: "smooth",
+      block: "center"
+    });
+  }, 200);
 }
-
-runBtn.addEventListener("click", async () => {
-  const value = urlInput.value.trim();
-  if (!value) {
-    alert("URLが入力されていません。枠内に貼り付けてください。");
-    urlInput.focus();
-    return;
+/* =====================================================
+   実行ボタン
+===================================================== */
+runBtn.addEventListener(
+  "click",
+  async () => {
+    const value =
+      urlInput.value.trim();
+    if (!value) {
+      alert(
+        "URLが入力されていません。\n" +
+        "枠内に貼り付けてください。"
+      );
+      urlInput.focus();
+      return;
+    }
+    await handleUrl(value);
   }
-  await handleUrl(value);
-});
+);
 </script>
-
 </body>
 </html>
